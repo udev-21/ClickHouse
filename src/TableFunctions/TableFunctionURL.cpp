@@ -13,11 +13,17 @@
 #include <Analyzer/TableFunctionNode.h>
 #include <Interpreters/parseColumnsListForTableFunction.h>
 #include <Formats/FormatFactory.h>
+#include <Core/Settings.h>
 
 #include <IO/WriteHelpers.h>
 #include <IO/WriteBufferFromVector.h>
 namespace DB
 {
+
+namespace Setting
+{
+    extern const SettingsBool parallel_replicas_for_cluster_engines;
+}
 
 std::vector<size_t> TableFunctionURL::skipAnalysisForArguments(const QueryTreeNodePtr & query_node_table_function, ContextPtr) const
 {
@@ -139,30 +145,34 @@ StoragePtr TableFunctionURL::getStorage(
             /*distributed_processing*/ true);
     }
 
-    LOG_DEBUG(&Poco::Logger::get("TableFunctionURL"), "TableFunctionURL::getStorage wrapped to cluster version");
-    return std::make_shared<StorageURLCluster>(
-        global_context,
-        "default",
-        filename,
-        format,
-        compression_method,
-        StorageID(getDatabaseName(), table_name),
-        getActualTableStructure(global_context, /* is_insert_query */ true),
-        ConstraintsDescription{},
-        configuration);
+    const auto & settings = global_context->getSettingsRef();
+    if (settings[Setting::parallel_replicas_for_cluster_engines])
+    {
+        LOG_DEBUG(&Poco::Logger::get("TableFunctionURL"), "TableFunctionURL::getStorage wrapped to cluster version");
+        return std::make_shared<StorageURLCluster>(
+            global_context,
+            "default",  // FIXME
+            filename,
+            format,
+            compression_method,
+            StorageID(getDatabaseName(), table_name),
+            getActualTableStructure(global_context, /* is_insert_query */ true),
+            ConstraintsDescription{},
+            configuration);
+    }
 
-    // return std::make_shared<StorageURL>(
-    //     source,
-    //     StorageID(getDatabaseName(), table_name),
-    //     format_,
-    //     std::nullopt /*format settings*/,
-    //     columns,
-    //     ConstraintsDescription{},
-    //     String{},
-    //     global_context,
-    //     compression_method_,
-    //     configuration.headers,
-    //     configuration.http_method);
+    return std::make_shared<StorageURL>(
+        source,
+        StorageID(getDatabaseName(), table_name),
+        format_,
+        std::nullopt /*format settings*/,
+        columns,
+        ConstraintsDescription{},
+        String{},
+        global_context,
+        compression_method_,
+        configuration.headers,
+        configuration.http_method);
 }
 
 ColumnsDescription TableFunctionURL::getActualTableStructure(ContextPtr context, bool /*is_insert_query*/) const
