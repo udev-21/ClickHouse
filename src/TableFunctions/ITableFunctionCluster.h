@@ -29,10 +29,18 @@ public:
         if (args.empty())
             throw Exception(ErrorCodes::LOGICAL_ERROR, "Unexpected empty list of arguments for {}Cluster table function", Base::name);
 
-        ASTPtr cluster_name_arg = args.front();
-        args.erase(args.begin());
-        Base::updateStructureAndFormatArgumentsIfNeeded(args, structure_, format_, context);
-        args.insert(args.begin(), cluster_name_arg);
+        /// FIXME, means that we got here from converting `url()` to `urlCluster()`
+        if (args.size() > 2)
+        {
+            ASTPtr cluster_name_arg = args.front();
+            args.erase(args.begin());
+            Base::updateStructureAndFormatArgumentsIfNeeded(args, structure_, format_, context);
+            args.insert(args.begin(), cluster_name_arg);
+        }
+        else
+        {
+            Base::updateStructureAndFormatArgumentsIfNeeded(args, structure_, format_, context);
+        }
     }
 
 protected:
@@ -51,7 +59,7 @@ protected:
                 "corresponding table function",
                 getName());
 
-        /// Evaluate only first argument, everything else will be done Base class
+        /// Evaluate only first argument, everything else will be done by Base class
         args[0] = evaluateConstantExpressionOrIdentifierAsLiteral(args[0], context);
 
         /// Cluster name is always the first

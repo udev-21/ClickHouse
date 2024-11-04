@@ -1,5 +1,6 @@
 #include <TableFunctions/TableFunctionURL.h>
 
+#include "Storages/StorageURLCluster.h"
 #include "registerTableFunctions.h"
 #include <Access/Common/AccessFlags.h>
 #include <Interpreters/evaluateConstantExpression.h>
@@ -120,6 +121,55 @@ StoragePtr TableFunctionURL::getStorage(
     const String & source, const String & format_, const ColumnsDescription & columns, ContextPtr global_context,
     const std::string & table_name, const String & compression_method_) const
 {
+    LOG_DEBUG(&Poco::Logger::get("TableFunctionURL"), "TableFunctionURL::getStorage :(");
+    // StoragePtr storage;
+    //
+    // if (global_context->getClientInfo().query_kind == ClientInfo::QueryKind::SECONDARY_QUERY)
+    // {
+    //     return std::make_shared<StorageURL>(
+    //         source,
+    //         StorageID(getDatabaseName(), table_name),
+    //         format_,
+    //         std::nullopt /*format settings*/,
+    //         columns,
+    //         ConstraintsDescription{},
+    //         String{},
+    //         global_context,
+    //         compression_method_,
+    //         configuration.headers,
+    //         configuration.http_method);
+    //         // nullptr,
+    //         // /*distributed_processing*/ true);
+    //     // //On worker node this uri won't contain globs
+    //     // storage = std::make_shared<StorageURL>(
+    //     //     filename,
+    //     //     StorageID(getDatabaseName(), table_name),
+    //     //     format,
+    //     //     std::nullopt /*format settings*/,
+    //     //     columns,
+    //     //     ConstraintsDescription{},
+    //     //     String{},
+    //     //     global_context,
+    //     //     compression_method,
+    //     //     configuration.headers,
+    //     //     configuration.http_method,
+    //     //     nullptr,
+    //     //     /*distributed_processing=*/ true);
+    // }
+    //
+    // // LOG_DEBUG(&Poco::Logger::get("TableFunctionURLCluster"), "Called with cluster: {}, filename: {}, format: {}", cluster_name, filename, format);
+    // LOG_DEBUG(&Poco::Logger::get("TableFunctionURL"), "TableFunctionURL::getStorage wrapped to cluster version");
+    // return std::make_shared<StorageURLCluster>(
+    //     global_context,
+    //     "default",
+    //     filename,
+    //     format,
+    //     compression_method,
+    //     StorageID(getDatabaseName(), table_name),
+    //     getActualTableStructure(global_context, /* is_insert_query */ true),
+    //     ConstraintsDescription{},
+    //     configuration);
+
     return std::make_shared<StorageURL>(
         source,
         StorageID(getDatabaseName(), table_name),

@@ -4562,7 +4562,14 @@ void QueryAnalyzer::resolveTableFunction(QueryTreeNodePtr & table_function_node,
     if (!nested_table_function)
         expressions_visitor.visit(table_function_node_typed.getArgumentsNode());
 
-    const auto & table_function_name = table_function_node_typed.getTableFunctionName();
+    auto table_function_name = table_function_node_typed.getTableFunctionName();
+
+    // if (table_function_name == "url")
+    // {
+    //     // table_function_name = "urlCluster";
+    //     // auto cluster_name = std::make_shared<ConstantNode>("default");
+    //     // table_function_node_typed.getArguments().getNodes().insert(table_function_node_typed.getArguments().getNodes().begin(), std::make_shared<ConstantNode>(String("drdrefault")));
+    // }
 
     auto & scope_context = scope.context;
 
