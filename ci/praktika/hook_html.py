@@ -132,8 +132,8 @@ class HtmlRunnerHooks:
                 result = Result.generate_skipped(job.name)
             results.append(result)
         summary_result = Result.generate_pending(_workflow.name, results=results)
-        summary_result.aux_links.append(env.CHANGE_URL)
-        summary_result.aux_links.append(env.RUN_URL)
+        summary_result.links.append(env.CHANGE_URL)
+        summary_result.links.append(env.RUN_URL)
         summary_result.start_time = Utils.timestamp()
         page_url = "/".join(
             ["https:/", Settings.HTML_S3_PATH, str(Path(Settings.HTML_PAGE_FILE).name)]
@@ -142,7 +142,6 @@ class HtmlRunnerHooks:
             page_url = page_url.replace(bucket, endpoint)
         # TODO: add support for non-PRs (use branch?)
         page_url += f"?PR={env.PR_NUMBER}&sha=latest&name_0={urllib.parse.quote(env.WORKFLOW_NAME, safe='')}"
-        summary_result.html_link = page_url
 
         # clean the previous latest results in PR if any
         if env.PR_NUMBER:

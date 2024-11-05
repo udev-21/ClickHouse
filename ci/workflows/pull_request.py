@@ -62,12 +62,11 @@ amd_build_jobs = Job.Config(
     provides=[[ArtifactNames.CH_AMD_DEBUG], [ArtifactNames.CH_AMD_RELEASE]],
 )
 
-statless_batch_num = 2
 stateless_tests_amd_debug_jobs = Job.Config(
-    name=JobNames.STATELESS_TESTS,
+    name=JobNames.STATELESS_AMD_DEBUG,
     runs_on=[RunnerLabels.BUILDER],
     command="python3 ./ci/jobs/functional_stateless_tests.py amd_debug",
-    run_in_docker="clickhouse/stateless-test",
+    run_in_docker="clickhouse/stateless-test+--security-opt seccomp=unconfined",
     digest_config=Job.CacheDigestConfig(
         include_paths=[
             "./ci/jobs/functional_stateless_tests.py",
@@ -75,12 +74,24 @@ stateless_tests_amd_debug_jobs = Job.Config(
     ),
     requires=[ArtifactNames.CH_AMD_DEBUG],
 ).parametrize(
-    parameter=[
-        f"parallel {i+1}/{statless_batch_num}" for i in range(statless_batch_num)
-    ]
-    + ["non-parallel"],
-    runs_on=[[RunnerLabels.BUILDER] for _ in range(statless_batch_num)]
-    + [[RunnerLabels.STYLE_CHECKER]],
+    parameter=["parallel", "non-parallel"],
+    runs_on=[[RunnerLabels.BUILDER], [RunnerLabels.STYLE_CHECKER]],
+)
+
+stateless_tests_amd_release_jobs = Job.Config(
+    name=JobNames.STATELESS_AMD_RELEASE,
+    runs_on=[RunnerLabels.BUILDER],
+    command="python3 ./ci/jobs/functional_stateless_tests.py amd_release",
+    run_in_docker="clickhouse/stateless-test+--security-opt seccomp=unconfined",
+    digest_config=Job.CacheDigestConfig(
+        include_paths=[
+            "./ci/jobs/functional_stateless_tests.py",
+        ],
+    ),
+    requires=[ArtifactNames.CH_AMD_RELEASE],
+).parametrize(
+    parameter=["parallel", "non-parallel"],
+    runs_on=[[RunnerLabels.BUILDER], [RunnerLabels.STYLE_CHECKER]],
 )
 
 workflow = Workflow.Config(
@@ -91,6 +102,7 @@ workflow = Workflow.Config(
         style_check_job,
         fast_test_job,
         *amd_build_jobs,
+        *stateless_tests_amd_release_jobs,
         *stateless_tests_amd_debug_jobs,
     ],
     artifacts=[

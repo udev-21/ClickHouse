@@ -1,5 +1,6 @@
 import argparse
 import os
+import time
 from pathlib import Path
 
 from praktika.param import get_param
@@ -64,10 +65,11 @@ def main():
         no_parallel = parallel_or_sequential == "non-parallel"
         no_sequential = parallel_or_sequential == "parallel"
 
-    os.environ["AZURE_CONNECTION_STRING"] = Shell.get_output(
-        f"aws ssm get-parameter --region us-east-1 --name azure_connection_string --with-decryption --output text --query Parameter.Value",
-        verbose=True,
-    )
+    # os.environ["AZURE_CONNECTION_STRING"] = Shell.get_output(
+    #     f"aws ssm get-parameter --region us-east-1 --name azure_connection_string --with-decryption --output text --query Parameter.Value",
+    #     verbose=True,
+    #     strict=True
+    # )
 
     stop_watch = Utils.Stopwatch()
 
@@ -94,8 +96,11 @@ def main():
             f"cp programs/server/config.xml programs/server/users.xml {Settings.TEMP_DIR}/etc/clickhouse-server/",
             f"./tests/config/install.sh {Settings.TEMP_DIR}/etc/clickhouse-server {Settings.TEMP_DIR}/etc/clickhouse-client --s3-storage",
             # update_path_ch_config,
-            f"sed -i 's|>/var/|>{Settings.TEMP_DIR}/var/|g; s|>/etc/|>{Settings.TEMP_DIR}/etc/|g' {Settings.TEMP_DIR}/etc/clickhouse-server/config.xml",
-            f"sed -i 's|>/etc/|>{Settings.TEMP_DIR}/etc/|g' {Settings.TEMP_DIR}/etc/clickhouse-server/config.d/ssl_certs.xml",
+            # f"sed -i 's|>/var/|>{Settings.TEMP_DIR}/var/|g; s|>/etc/|>{Settings.TEMP_DIR}/etc/|g' {Settings.TEMP_DIR}/etc/clickhouse-server/config.xml",
+            # f"sed -i 's|>/etc/|>{Settings.TEMP_DIR}/etc/|g' {Settings.TEMP_DIR}/etc/clickhouse-server/config.d/ssl_certs.xml",
+            f"for file in /tmp/praktika/etc/clickhouse-server/config.d/*.xml; do [ -f $file ] && echo Change config $file && sed -i 's|>/var/|>{Settings.TEMP_DIR}/var/|g; s|>/etc/|>{Settings.TEMP_DIR}/etc/|g' $(readlink -f $file); done",
+            f"for file in /tmp/praktika/etc/clickhouse-server/*.xml; do [ -f $file ] && echo Change config $file && sed -i 's|>/var/|>{Settings.TEMP_DIR}/var/|g; s|>/etc/|>{Settings.TEMP_DIR}/etc/|g' $(readlink -f $file); done",
+            f"for file in /tmp/praktika/etc/clickhouse-server/config.d/*.xml; do [ -f $file ] && echo Change config $file && sed -i 's|<path>local_disk|<path>{Settings.TEMP_DIR}/local_disk|g' $(readlink -f $file); done",
             f"clickhouse-server --version",
         ]
         results.append(
@@ -107,25 +112,33 @@ def main():
 
     CH = ClickHouseProc()
     if res and JobStages.START in stages:
+        files = []
         stop_watch_ = Utils.Stopwatch()
         step_name = "Start ClickHouse Server"
         print(step_name)
-        res = res and CH.start_minio()
+        minio_log = "/tmp/praktika/output/minio.log"
+        res = res and CH.start_minio(log_file_path=minio_log)
+        files += [minio_log]
+        time.sleep(10)
+        Shell.check("ps -ef | grep minio", verbose=True)
+        res = res and Shell.check(
+            "aws s3 ls s3://test --endpoint-url http://localhost:11111/", verbose=True
+        )
         res = res and CH.start()
         res = res and CH.wait_ready()
+        if res:
+            print("ch started")
+        else:
+            files += [
+                "/tmp/praktika/var/log/clickhouse-server/clickhouse-server.log",
+                "/tmp/praktika/var/log/clickhouse-server/clickhouse-server.err.log",
+            ]
         results.append(
             Result.create_from(
                 name=step_name,
                 status=res,
                 stopwatch=stop_watch_,
-                files=(
-                    [
-                        "/tmp/praktika/var/log/clickhouse-server/clickhouse-server.log",
-                        "/tmp/praktika/var/log/clickhouse-server/clickhouse-server.err.log",
-                    ]
-                    if not res
-                    else []
-                ),
+                files=files,
             )
         )
         res = results[-1].is_ok()

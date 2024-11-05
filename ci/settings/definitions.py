@@ -239,4 +239,5 @@ class JobNames:
     FAST_TEST = "Fast test"
     BUILD = "Build"
     BUILD_AMD_DEBUG = "Build (amd, debug)"
-    STATELESS_TESTS = "Stateless tests (amd, debug)"
+    STATELESS_AMD_RELEASE = "Stateless tests (amd, release)"
+    STATELESS_AMD_DEBUG = "Stateless tests (amd, debug)"
