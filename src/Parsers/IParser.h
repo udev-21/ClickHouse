@@ -4,6 +4,7 @@
 #include <set>
 #include <algorithm>
 #include <memory>
+#include <iostream>
 
 #include <Core/Defines.h>
 #include <Parsers/IAST_fwd.h>
@@ -100,11 +101,21 @@ public:
         Pos(Tokens & tokens_, uint32_t max_depth_, uint32_t max_backtracks_)
             : TokenIterator(tokens_), max_depth(max_depth_), max_backtracks(max_backtracks_)
         {
+#if !defined(NDEBUG)
+            /// Do not confuse these two values.
+            chassert(max_depth_ != DBMS_DEFAULT_MAX_PARSER_BACKTRACKS);
+            chassert(max_backtracks_ != DBMS_DEFAULT_MAX_PARSER_DEPTH);
+#endif
         }
 
         Pos(TokenIterator token_iterator_, uint32_t max_depth_, uint32_t max_backtracks_)
             : TokenIterator(token_iterator_), max_depth(max_depth_), max_backtracks(max_backtracks_)
         {
+#if !defined(NDEBUG)
+            /// Do not confuse these two values.
+            chassert(max_depth_ != DBMS_DEFAULT_MAX_PARSER_BACKTRACKS);
+            chassert(max_backtracks_ != DBMS_DEFAULT_MAX_PARSER_DEPTH);
+#endif
         }
 
         ALWAYS_INLINE void increaseDepth()
