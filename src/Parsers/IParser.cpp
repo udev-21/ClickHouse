@@ -1,5 +1,4 @@
 #include <Parsers/IParser.h>
-#include <iostream>
 
 namespace DB
 {

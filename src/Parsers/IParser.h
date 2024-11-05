@@ -4,7 +4,6 @@
 #include <set>
 #include <algorithm>
 #include <memory>
-#include <iostream>
 
 #include <Core/Defines.h>
 #include <Parsers/IAST_fwd.h>
