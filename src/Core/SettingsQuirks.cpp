@@ -52,6 +52,8 @@ namespace Setting
 {
     extern const SettingsBool async_query_sending_for_remote;
     extern const SettingsBool async_socket_for_remote;
+    extern const SettingsUInt64 max_parser_backtracks;
+    extern const SettingsUInt64 max_parser_depth;
     extern const SettingsUInt64 query_profiler_cpu_time_period_ns;
     extern const SettingsUInt64 query_profiler_real_time_period_ns;
     extern const SettingsBool use_hedged_requests;
@@ -144,6 +146,15 @@ void doSettingsSanityCheckClamp(Settings & current_settings, LoggerPtr log)
             LOG_WARNING(log, "Sanity check: 'max_block_size' cannot be 0. Set to default value {}", DEFAULT_BLOCK_SIZE);
         current_settings.set("max_block_size", DEFAULT_BLOCK_SIZE);
     }
+
+    #if !defined(NDEBUG)
+        /// Adjust settings to not trigger IParser sanity check
+        if (current_settings[Setting::max_parser_backtracks] == DBMS_DEFAULT_MAX_PARSER_DEPTH)
+            current_settings[Setting::max_parser_backtracks] = DBMS_DEFAULT_MAX_PARSER_DEPTH + 1;
+
+        if (current_settings[Setting::max_parser_depth] == DBMS_DEFAULT_MAX_PARSER_BACKTRACKS)
+            current_settings[Setting::max_parser_depth] = DBMS_DEFAULT_MAX_PARSER_BACKTRACKS + 1;
+    #endif
 }
 
 }
